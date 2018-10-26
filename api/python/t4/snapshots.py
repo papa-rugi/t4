@@ -11,7 +11,7 @@ from urllib.request import url2pathname
 import boto3
 import jsonlines
 
-from .data_transfer import (copy_object, deserialize_obj, download_bytes, download_file, list_objects,
+from .data_transfer import (copy_object, deserialize_obj, download_bytes, download_file, get_object, list_objects,
                             list_object_versions, upload_bytes, upload_file, TargetType)
 from .exceptions import PackageException
 from .util import HeliumException, split_path
@@ -182,11 +182,11 @@ def download_file_from_snapshot(src, dst, snapshothash):
     return download_file(src, dst, version=obj_rec['VersionId'])
 
 
-def download_bytes_from_snapshot(src, snapshothash):
+def get_object_from_snapshot(src, snapshothash):
     bucket, key = split_path(src)
     snapshot_data = read_snapshot_by_hash(bucket, snapshothash)
     obj_rec = snapshot_data['contents'][key]
-    return download_bytes(src, version=obj_rec['VersionId'])
+    return get_object(src, version=obj_rec['VersionId'])
 
 class PhysicalKeyType(Enum):
     LOCAL = 'LOCAL'

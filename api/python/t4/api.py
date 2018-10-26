@@ -7,9 +7,9 @@ from six.moves import urllib
 import pandas as pd
 
 from .data_transfer import (TargetType, deserialize_obj, download_bytes,
-                            download_file, upload_bytes, upload_file, delete_object,
+                            download_file, get_object, upload_bytes, upload_file, delete_object,
                             list_objects, list_object_versions, serialize_obj)
-from .snapshots import (create_snapshot, download_bytes_from_snapshot,
+from .snapshots import (create_snapshot, get_object_from_snapshot,
                         download_file_from_snapshot, read_snapshot_by_hash,
                         get_snapshots)
 from .util import (HeliumConfig, HeliumException, AWS_SEPARATOR, CONFIG_PATH,
@@ -51,9 +51,9 @@ def get(src, snapshot=None, version=None):
     if snapshot is not None and version is not None:
         raise HeliumException("Specify only one of snapshot or version.")
     if snapshot is not None:
-        data, meta = download_bytes_from_snapshot(src, snapshot)
+        fd, meta = get_object_from_snapshot(src, snapshot)
     else:
-        data, meta = download_bytes(src, version)
+        fd, meta = get_object(src, version)
 
     target_str = meta.get('target')
     if target_str is None:
@@ -63,7 +63,7 @@ def get(src, snapshot=None, version=None):
         target = TargetType(target_str)
     except ValueError:
         raise HeliumException("Unknown serialization target: %r" % target_str)
-    return deserialize_obj(data, target), meta.get('user_meta')
+    return deserialize_obj(fd, target), meta.get('user_meta')
 
 
 def delete(path):

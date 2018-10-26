@@ -31,22 +31,20 @@ class TargetType(Enum):
     NUMPY = 'numpy'
 
 
-def deserialize_obj(data, target):
+def deserialize_obj(fd, target):
     if target == TargetType.BYTES:
-        obj = data
+        obj = fd.read()
     elif target == TargetType.UNICODE:
-        obj = data.decode('utf-8')
+        obj = fd.read().decode('utf-8')
     elif target == TargetType.JSON:
-        obj = json.loads(data.decode('utf-8'))
+        obj = json.load(fd)
     elif target == TargetType.NUMPY:
         import numpy as np
-        buf = BytesIO(data)
-        obj = np.load(buf, allow_pickle=False)
+        obj = np.load(fd, allow_pickle=False)
     elif target == TargetType.PYARROW:
         import pyarrow as pa
         from pyarrow import parquet
-        buf = BytesIO(data)
-        table = parquet.read_table(buf)
+        table = parquet.read_table(fd)
         obj = pa.Table.to_pandas(table)
     else:
         raise NotImplementedError
@@ -216,7 +214,7 @@ def download_file(src_path, dest_path, version=None):
         _download_single_file(bucket, key, dest_path, version=version)
 
 
-def download_bytes(path, version=None):
+def get_object(path, version=None):
     bucket, key = split_path(path, require_subpath=True)
     params = dict(Bucket=bucket,
                   Key=key)
@@ -225,7 +223,12 @@ def download_bytes(path, version=None):
 
     resp = s3_client.get_object(**params)
     meta = _parse_metadata(resp)
-    body = resp['Body'].read()
+    return resp['Body'], meta
+
+
+def download_bytes(path, version=None):
+    fd, meta = get_object(path, version)
+    body = fd.read()
     return body, meta
 
 

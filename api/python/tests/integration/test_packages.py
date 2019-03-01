@@ -11,7 +11,7 @@ import pytest
 import t4
 from t4 import Package
 from t4.util import (QuiltException, APP_NAME, APP_AUTHOR, BASE_DIR, BASE_PATH,
-                     validate_package_name, parse_file_url)
+                     validate_package_name, parse_file_url, fix_url)
 
 LOCAL_MANIFEST = os.path.join(os.path.dirname(__file__), 'data', 'local_manifest.jsonl')
 REMOTE_MANIFEST = os.path.join(os.path.dirname(__file__), 'data', 't4_manifest.jsonl')
@@ -279,6 +279,16 @@ def test_fetch(tmpdir):
     # Raise an error if you copy to yourself.
     with pytest.raises(shutil.SameFileError):
         pkg['foo'].fetch(os.path.join(os.path.dirname(__file__), 'data', 'foo.txt'))
+
+
+def test_fetch_default_dest(tmpdir):
+    with patch('t4.packages.copy_file') as copy_mock:
+        (Package()
+         .set('foo', os.path.join(os.path.dirname(__file__), 'data', 'foo.txt'))['foo']
+         .fetch())
+        filepath = fix_url(os.path.join(os.path.dirname(__file__), 'data', 'foo.txt'))
+        copy_mock.assert_called_once_with(filepath, ANY, ANY)
+
 
 def test_load_into_t4(tmpdir):
     """ Verify loading local manifest and data into S3. """
